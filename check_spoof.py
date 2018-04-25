@@ -79,32 +79,31 @@ while key!=27:
 		tensor_img_in = np.expand_dims(tensor_img, 0)
 		liveness_val = model.predict(tensor_img_in)
 
-		if liveness_val>0.5:
-			for index in range(n+2):
-				index = index%n
-				
-				ret, inputImg = video.read()
-
-				inputImg = inputImg[xo:xb, yo:yb]
-				img = cv2.cvtColor(inputImg, cv2.COLOR_RGB2GRAY)
-
-				magnitude = apply_fourier(img)
-				if count == 0:
-					magnitude_arr = [[[0]*np.size(img, 1)]*np.size(img, 0)]*n
-					magnitude_arr[index] = magnitude
-					count = 1
-				else:
-					magnitude_arr[index] = magnitude
-
-				hfd_arr[index], total_mag[index] = hfd(magnitude_arr[index], thresh_freq)
+		for index in range(n+2):
+			index = index%n
 			
-			if np.median(hfd_arr)>=thresh_hfd and np.std(total_mag)>=thresh_fdd:
-				text = "LIVE"
-			else:
-				text = "SPOOF"
-		else:
-			text = "LIVE"
+			ret, inputImg = video.read()
 
+			inputImg = inputImg[xo:xb, yo:yb]
+			img = cv2.cvtColor(inputImg, cv2.COLOR_RGB2GRAY)
+
+			magnitude = apply_fourier(img)
+			if count == 0:
+				magnitude_arr = [[[0]*np.size(img, 1)]*np.size(img, 0)]*n
+				magnitude_arr[index] = magnitude
+				count = 1
+			else:
+				magnitude_arr[index] = magnitude
+
+			hfd_arr[index], total_mag[index] = hfd(magnitude_arr[index], thresh_freq)
+		
+		if np.median(hfd_arr)>=thresh_hfd and np.std(total_mag)>=thresh_fdd:
+			text = "LIVE"
+		elif liveness_val<0.5:
+			text = "LIVE"
+		else:
+			text = "SPOOF"
+ 
 	inputImg = cv2.putText(inputImg, text, (50, 50), 0, 1.0, (0, 255, 0), 2) 
 
 	cv2.imshow("image", inputImg)
